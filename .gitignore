@@ -1,0 +1,36 @@
+# Rust build artifacts
+/target
+Cargo.lock
+
+# Xcode build artifacts
+prstatus/build/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Distribution files
+dist/
+*.tar.gz
+*.tar.gz.sha256
+
+# Debug logs
+debug.log
+
+# IDE files
+.cursor/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
