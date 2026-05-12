@@ -532,14 +532,20 @@ class PRStatusMenuBarApp: NSObject, NSApplicationDelegate {
         
         let icon: String
         if let status = status {
-            switch status.overall_status {
-            case "failing":
-                icon = "🔴"  // CI/CD failures - immediate attention needed
-            case "running":
-                icon = "🟡"  // CI/CD running - monitor for changes
-            case "passing":
-                icon = "🟢"  // CI/CD passing - all good
-            default:
+            // Priority 1: Show running icon if any PRs are running
+            if !status.running_prs.isEmpty {
+                icon = "🔄"  // Running icon - any PRs are running
+            }
+            // Priority 2: Show red dot if no PRs are running but any have failed
+            else if !status.failing_prs.isEmpty {
+                icon = "🔴"  // Red dot - failures need attention
+            }
+            // Priority 3: Show green if all PRs are passing
+            else if !status.passing_prs.isEmpty {
+                icon = "🟢"  // Green - all good
+            }
+            // Default: No PRs or no CI/CD data
+            else {
                 icon = "📭"  // No PRs or no CI/CD data
             }
         } else {

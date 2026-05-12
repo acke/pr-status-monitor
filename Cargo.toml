@@ -1,6 +1,6 @@
 [package]
 name = "my-prs"
-version = "0.0.21"
+version = "0.0.22"
 edition = "2021"
 description = "A CLI tool to track your GitHub PR status"
 authors = ["Your Name <your.email@example.com>"]
