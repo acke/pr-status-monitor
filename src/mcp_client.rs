@@ -1,28 +1,5 @@
 use anyhow::{anyhow, Result};
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MCPRequest {
-    pub jsonrpc: String,
-    pub id: u64,
-    pub method: String,
-    pub params: serde_json::Value,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MCPResponse {
-    pub jsonrpc: String,
-    pub id: u64,
-    pub result: Option<serde_json::Value>,
-    pub error: Option<MCPError>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MCPError {
-    pub code: i32,
-    pub message: String,
-}
 
 pub struct MCPClient {
     client: Client,

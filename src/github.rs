@@ -32,15 +32,6 @@ pub struct Branch {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Review {
-    pub id: u64,
-    pub user: User,
-    pub state: String,
-    pub submitted_at: Option<DateTime<Utc>>,
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
 pub struct Repository {
     pub id: u64,
     pub name: String,
@@ -53,12 +44,6 @@ pub struct Repository {
     pub language: Option<String>,
     pub stargazers_count: u64,
     pub forks_count: u64,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct SearchResult {
-    pub total_count: u64,
-    pub items: Vec<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
