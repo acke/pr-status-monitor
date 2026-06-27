@@ -543,6 +543,130 @@ pub fn print_pr_status_overview(prs: &[PullRequest], _username: &str, org_name: 
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::github::{CheckRun, StatusCheck, WorkflowRun};
+    use chrono::Utc;
+
+    fn workflow(name: &str, status: &str, conclusion: Option<&str>) -> WorkflowRun {
+        WorkflowRun {
+            id: 1,
+            name: name.to_string(),
+            status: status.to_string(),
+            conclusion: conclusion.map(str::to_string),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            html_url: String::new(),
+            workflow_id: 1,
+        }
+    }
+
+    fn check(name: &str, status: &str, conclusion: Option<&str>) -> CheckRun {
+        CheckRun {
+            id: 1,
+            name: name.to_string(),
+            status: status.to_string(),
+            conclusion: conclusion.map(str::to_string),
+            started_at: None,
+            completed_at: None,
+            html_url: String::new(),
+        }
+    }
+
+    fn status_check(state: &str) -> StatusCheck {
+        StatusCheck {
+            state: state.to_string(),
+            description: None,
+            context: "ci/test".to_string(),
+            target_url: None,
+        }
+    }
+
+    #[test]
+    fn test_truncate_short_string() {
+        assert_eq!(truncate_string("hello", 10), "hello");
+    }
+
+    #[test]
+    fn test_truncate_long_string() {
+        let result = truncate_string("abcdefghij", 7);
+        assert_eq!(result, "abcd...");
+        assert_eq!(result.len(), 7);
+    }
+
+    #[test]
+    fn test_truncate_exact_length() {
+        assert_eq!(truncate_string("hello", 5), "hello");
+    }
+
+    #[test]
+    fn test_ci_status_empty() {
+        assert_eq!(get_overall_ci_status(&[], &[], &[]), "❓");
+    }
+
+    #[test]
+    fn test_ci_status_all_success() {
+        let wf = workflow("Tests", "completed", Some("success"));
+        assert_eq!(get_overall_ci_status(&[wf], &[], &[]), "✅");
+    }
+
+    #[test]
+    fn test_ci_status_failure() {
+        let wf = workflow("Tests", "completed", Some("failure"));
+        assert_eq!(get_overall_ci_status(&[wf], &[], &[]), "❌");
+    }
+
+    #[test]
+    fn test_ci_status_in_progress() {
+        let wf = workflow("Tests", "in_progress", None);
+        assert_eq!(get_overall_ci_status(&[wf], &[], &[]), "🔄");
+    }
+
+    #[test]
+    fn test_ci_status_queued() {
+        let wf = workflow("Tests", "queued", None);
+        assert_eq!(get_overall_ci_status(&[wf], &[], &[]), "🔄");
+    }
+
+    #[test]
+    fn test_ci_status_skipped_counts_as_success() {
+        let wf = workflow("Tests", "completed", Some("skipped"));
+        assert_eq!(get_overall_ci_status(&[wf], &[], &[]), "✅");
+    }
+
+    #[test]
+    fn test_ci_status_build_workflow_ignored() {
+        let build = workflow("Build", "completed", Some("failure"));
+        assert_eq!(get_overall_ci_status(&[build], &[], &[]), "❓");
+    }
+
+    #[test]
+    fn test_ci_status_running_takes_priority_over_failure() {
+        let failing = workflow("Tests", "completed", Some("failure"));
+        let running = check("lint", "in_progress", None);
+        assert_eq!(get_overall_ci_status(&[failing], &[running], &[]), "🔄");
+    }
+
+    #[test]
+    fn test_ci_status_check_run_failure() {
+        let c = check("lint", "completed", Some("failure"));
+        assert_eq!(get_overall_ci_status(&[], &[c], &[]), "❌");
+    }
+
+    #[test]
+    fn test_ci_status_status_check_pending() {
+        let s = status_check("pending");
+        assert_eq!(get_overall_ci_status(&[], &[], &[s]), "🔄");
+    }
+
+    #[test]
+    fn test_ci_status_status_check_failure() {
+        let s = status_check("failure");
+        assert_eq!(get_overall_ci_status(&[], &[], &[s]), "❌");
+    }
+}
+
 pub fn print_multi_repo_summary(
     prs_by_repo: &[(String, Vec<PullRequest>)], 
     _username: &str, 

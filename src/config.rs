@@ -273,3 +273,68 @@ impl Config {
         self.expand_path(&self.local_repos_path)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_config(token: Option<&str>) -> Config {
+        Config {
+            github_token: token.map(str::to_string),
+            ..Config::default()
+        }
+    }
+
+    #[test]
+    fn test_expand_path_absolute() {
+        let cfg = Config::default();
+        assert_eq!(cfg.expand_path("/absolute/path"), "/absolute/path");
+    }
+
+    #[test]
+    fn test_expand_path_tilde() {
+        let cfg = Config::default();
+        let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+        if !home.is_empty() {
+            let result = cfg.expand_path("~/repos");
+            assert!(result.starts_with(&home));
+            assert!(result.ends_with("/repos"));
+        }
+    }
+
+    #[test]
+    fn test_expand_path_no_tilde() {
+        let cfg = Config::default();
+        assert_eq!(cfg.expand_path("relative/path"), "relative/path");
+    }
+
+    #[test]
+    fn test_get_github_token_from_config() {
+        let cfg = make_config(Some("cfg-token"));
+        assert_eq!(cfg.get_github_token(), Some("cfg-token".to_string()));
+    }
+
+    #[test]
+    fn test_get_github_token_none_when_missing() {
+        std::env::remove_var("GITHUB_PRIVATE_TOKEN");
+        std::env::remove_var("GITHUB_TOKEN");
+        let cfg = make_config(None);
+        assert_eq!(cfg.get_github_token(), None);
+    }
+
+    #[test]
+    fn test_get_local_repos_path_expands_tilde() {
+        let cfg = Config::default();
+        let result = cfg.get_local_repos_path();
+        assert!(!result.contains('~'), "tilde should be expanded");
+    }
+
+    #[test]
+    fn test_default_config_values() {
+        let cfg = Config::default();
+        assert_eq!(cfg.github_base_url, "https://api.github.com");
+        assert_eq!(cfg.default_pr_state, "open");
+        assert_eq!(cfg.default_pr_limit, 10);
+        assert!(!cfg.show_workflows_by_default);
+    }
+}

@@ -117,3 +117,76 @@ impl PullRequest {
         self.draft
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    fn make_pr(state: &str, draft: bool, mergeable_state: Option<&str>) -> PullRequest {
+        PullRequest {
+            number: 1,
+            title: "test".to_string(),
+            state: state.to_string(),
+            user: User { login: "user".to_string(), id: 1, avatar_url: String::new() },
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            html_url: String::new(),
+            head: Branch { label: "head".to_string(), r#ref: "head".to_string(), sha: String::new() },
+            base: Branch { label: "main".to_string(), r#ref: "main".to_string(), sha: String::new() },
+            draft,
+            mergeable: None,
+            mergeable_state: mergeable_state.map(str::to_string),
+        }
+    }
+
+    #[test]
+    fn test_status_emoji_open() {
+        assert_eq!(make_pr("open", false, None).status_emoji(), "🟢");
+    }
+
+    #[test]
+    fn test_status_emoji_closed() {
+        assert_eq!(make_pr("closed", false, None).status_emoji(), "🔴");
+    }
+
+    #[test]
+    fn test_status_emoji_merged() {
+        assert_eq!(make_pr("merged", false, None).status_emoji(), "🟣");
+    }
+
+    #[test]
+    fn test_status_emoji_unknown() {
+        assert_eq!(make_pr("unknown", false, None).status_emoji(), "⚪");
+    }
+
+    #[test]
+    fn test_mergeable_emoji_clean() {
+        assert_eq!(make_pr("open", false, Some("clean")).mergeable_emoji(), "✅");
+    }
+
+    #[test]
+    fn test_mergeable_emoji_dirty() {
+        assert_eq!(make_pr("open", false, Some("dirty")).mergeable_emoji(), "⚠️");
+    }
+
+    #[test]
+    fn test_mergeable_emoji_blocked() {
+        assert_eq!(make_pr("open", false, Some("blocked")).mergeable_emoji(), "🚫");
+    }
+
+    #[test]
+    fn test_mergeable_emoji_none() {
+        assert_eq!(make_pr("open", false, None).mergeable_emoji(), "❓");
+    }
+
+    #[test]
+    fn test_is_draft_true() {
+        assert!(make_pr("open", true, None).is_draft());
+    }
+
+    #[test]
+    fn test_is_draft_false() {
+        assert!(!make_pr("open", false, None).is_draft());
+    }
+}

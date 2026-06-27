@@ -62,7 +62,7 @@ pub fn scan_local_repositories(repos_path: &str) -> Result<Vec<LocalRepo>> {
     Ok(local_repos)
 }
 
-fn expand_tilde(path: &str) -> String {
+pub(crate) fn expand_tilde(path: &str) -> String {
     if path.starts_with("~/") {
         if let Some(home) = std::env::var_os("HOME") {
             return format!("{}{}", home.to_string_lossy(), &path[1..]);
@@ -91,7 +91,7 @@ fn get_git_remote_url(repo_path: &Path) -> Result<String> {
     Ok(url)
 }
 
-fn parse_github_url(url: &str) -> Result<(String, String)> {
+pub(crate) fn parse_github_url(url: &str) -> Result<(String, String)> {
     // Handle both SSH and HTTPS URLs
     let cleaned_url = if url.starts_with("git@github.com:") {
         // SSH format: git@github.com:owner/repo.git
@@ -115,4 +115,55 @@ fn parse_github_url(url: &str) -> Result<(String, String)> {
     }
     
     Ok((parts[0].to_string(), parts[1].to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_ssh_url() {
+        let (owner, repo) = parse_github_url("git@github.com:acme/my-repo.git").unwrap();
+        assert_eq!(owner, "acme");
+        assert_eq!(repo, "my-repo");
+    }
+
+    #[test]
+    fn test_parse_https_url() {
+        let (owner, repo) = parse_github_url("https://github.com/acme/my-repo.git").unwrap();
+        assert_eq!(owner, "acme");
+        assert_eq!(repo, "my-repo");
+    }
+
+    #[test]
+    fn test_parse_https_url_no_git_suffix() {
+        let (owner, repo) = parse_github_url("https://github.com/acme/my-repo").unwrap();
+        assert_eq!(owner, "acme");
+        assert_eq!(repo, "my-repo");
+    }
+
+    #[test]
+    fn test_parse_non_github_url_errors() {
+        assert!(parse_github_url("https://gitlab.com/acme/repo.git").is_err());
+    }
+
+    #[test]
+    fn test_parse_malformed_url_errors() {
+        assert!(parse_github_url("git@github.com:owner-only.git").is_err());
+    }
+
+    #[test]
+    fn test_expand_tilde_no_home() {
+        assert_eq!(expand_tilde("/absolute/path"), "/absolute/path");
+    }
+
+    #[test]
+    fn test_expand_tilde_expands() {
+        let home = std::env::var("HOME").unwrap_or_default();
+        if !home.is_empty() {
+            let expanded = expand_tilde("~/repos");
+            assert!(expanded.starts_with(&home));
+            assert!(expanded.ends_with("/repos"));
+        }
+    }
 }
